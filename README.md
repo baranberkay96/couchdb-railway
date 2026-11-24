@@ -1,5 +1,7 @@
 # Deploy and Host Apache CouchDB with Railway
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/apache-couchdb-35?referralCode=20H68q)
+
 Apache CouchDB is a document database that speaks HTTP and JSON and replicates between servers, browsers (PouchDB) and phones. This community template runs CouchDB 3.5 as a ready-to-use single node with the Fauxton admin UI, a login required for every request, CORS set up for Obsidian's Self-hosted LiveSync plugin, and daily backups of every database to a Railway Bucket.
 
 ## About Hosting Apache CouchDB
