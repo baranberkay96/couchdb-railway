@@ -44,14 +44,21 @@
 
 | Service | Idle RAM | Typical |
 |---|---|---|
-| CouchDB | see `_reports/round13/196-couchdb.md` | 0.2–1 GB |
+| CouchDB | 0.22 GB (measured) | 0.2–1 GB |
 | CouchDB Backup | 0 (runs once a day) | |
 
 Fits the Trial plan for personal sync; about $1–3/month idle at Railway prices plus volume and bucket storage.
 
 ## Verification checklist
 
-See `_reports/round13/196-couchdb.md` for the results of the pre-publish test: health, anonymous request refused, admin login, Fauxton, database + documents, CORS preflight for `app://obsidian.md`, backup and restore runs, short-password lock.
+- [x] Both services SUCCESS; `/_up` 200 without login; `/`, `/_all_dbs`, `/_utils/` 401 without login.
+- [x] Admin login: CouchDB 3.5.3, `_users` + `_replicator` created, single node `couchdb@127.0.0.1`.
+- [x] Database created, 500 documents via `_bulk_docs`, Mango `_find` query.
+- [x] CORS preflight from `app://obsidian.md`: 204 with allow-origin, credentials, methods, max-age 3600.
+- [x] Backup cron: `_users` (1 doc) and `obsidian` (500 docs) uploaded, read back and parsed, MANIFEST, retention.
+- [x] Restore command: `obsidian_restored` with 500 documents.
+- [x] `COUCHDB_PASSWORD=abc`: deploy SUCCESS, admin locked (401), log explains; restoring the password unlocked it.
+- [x] Server UUID and data unchanged across 4 redeploys.
 
 ## Open questions
 

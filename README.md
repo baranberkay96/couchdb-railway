@@ -49,7 +49,7 @@ A fresh CouchDB container is not usable yet: the system databases must be create
 
 **Backups and restore**: backups land in the Bucket under `couchdb/{timestamp}/{database}.jsonl.zst` with a `MANIFEST.txt` listing document counts. Trigger one with `railway cron run --service "CouchDB Backup"`. couchbackup does not include attachments by default (`BACKUP_ATTACHMENTS=true` is experimental); LiveSync stores notes as documents, so its vaults are covered. To restore, set the backup service's start command to `/usr/local/bin/couchdb-backup restore`, set `RESTORE_DATABASE` (and optionally `RESTORE_RUN`, `RESTORE_TARGET`), run it once and clear the start command. It restores into a new database (`{database}_restored`) and never overwrites one; replicate from there if you want to replace data.
 
-**Scaling**: CouchDB idles at a few hundred MB. Raise memory for large views and many concurrent replications, and grow the volume as databases grow; run `POST /{db}/_compact` (automatic compaction is on by default) to reclaim space.
+**Scaling**: CouchDB idled at about 220 MB on Railway in our test, so it runs on every plan. Raise memory for large views and many concurrent replications, and grow the volume as databases grow; run `POST /{db}/_compact` (automatic compaction is on by default) to reclaim space.
 
 **Versions and upgrades**: pinned to CouchDB 3.5.3. Change the tag and digest in `services/couchdb/Dockerfile` for newer 3.5.x releases; data files stay compatible within 3.x.
 
