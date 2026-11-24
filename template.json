@@ -1,0 +1,239 @@
+{
+  "name": "Apache CouchDB 3.5",
+  "description": "Single-node CouchDB with Fauxton, Obsidian LiveSync CORS and backups.",
+  "category": "Storage",
+  "tags": [
+    "couchdb",
+    "nosql",
+    "document-database",
+    "sync",
+    "obsidian",
+    "livesync",
+    "pouchdb",
+    "backups"
+  ],
+  "image": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/couchdb.svg",
+  "upstream": {
+    "couchdb": "couchdb:3.5.3 (Apache CouchDB 3.5.3, Debian trixie; digest sha256:0ba6b4b8dd823232185fa2c7de04634b925be62f97c9b7cbece7dd9119470e17, built 2026-11-24)",
+    "backup": "node:24.22.3-alpine3.24 + @cloudant/couchbackup 2.11.21 + zstd/jq/curl + rclone 1.76.0",
+    "checked": "2026-11-24"
+  },
+  "services": {
+    "CouchDB": {
+      "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/couchdb.svg",
+      "source": {
+        "repo": "baranberkay96/couchdb-railway",
+        "rootDirectory": "/services/couchdb"
+      },
+      "startCommand": null,
+      "preDeployCommand": null,
+      "healthcheckPath": "/_up",
+      "healthcheckTimeout": 300,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10,
+      "numReplicas": 1,
+      "cronSchedule": null,
+      "publicDomain": true,
+      "targetPort": 5984,
+      "tcpProxy": null,
+      "volume": {
+        "mountPath": "/opt/couchdb/data"
+      },
+      "variables": {
+        "COUCHDB_USER": {
+          "defaultValue": "admin",
+          "description": "Server admin created at boot (Fauxton login, LiveSync username).",
+          "required": true
+        },
+        "COUCHDB_PASSWORD": {
+          "defaultValue": "${{secret(32, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\")}}",
+          "description": "Server admin password, generated at deploy and re-applied at every boot. Under 12 characters locks the admin (see the deploy log).",
+          "required": true
+        },
+        "COUCHDB_SECRET": {
+          "defaultValue": "${{secret(64, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\")}}",
+          "description": "Secret that signs session cookies. Keep it stable or every session ends.",
+          "required": true
+        },
+        "COUCHDB_ERLANG_COOKIE": {
+          "defaultValue": "${{secret(32, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\")}}",
+          "description": "Erlang distribution cookie (single node; needed only if you later cluster).",
+          "required": false
+        },
+        "NODENAME": {
+          "defaultValue": "127.0.0.1",
+          "description": "Erlang node name suffix (couchdb@127.0.0.1). Do not change after the first boot: shard maps use it.",
+          "required": false
+        },
+        "COUCHDB_CORS_ORIGINS": {
+          "defaultValue": "app://obsidian.md,capacitor://localhost,http://localhost",
+          "description": "Origins allowed by CORS with credentials, comma-separated. The default lets Obsidian desktop and mobile (Self-hosted LiveSync) connect; empty = CORS off.",
+          "required": false
+        },
+        "COUCHDB_REQUIRE_VALID_USER": {
+          "defaultValue": "true",
+          "description": "true = every request except GET /_up needs a login (recommended on a public domain).",
+          "required": false
+        },
+        "COUCHDB_MAX_DOCUMENT_SIZE": {
+          "defaultValue": "50000000",
+          "description": "Largest document in bytes (LiveSync recommends 50 MB).",
+          "required": false
+        },
+        "COUCHDB_MAX_HTTP_REQUEST_SIZE": {
+          "defaultValue": "4294967296",
+          "description": "Largest HTTP request in bytes (bulk uploads, replication).",
+          "required": false
+        },
+        "PORT": {
+          "defaultValue": "5984",
+          "description": "CouchDB HTTP port: public HTTPS domain, healthcheck (/_up) and Fauxton (/_utils).",
+          "required": false
+        },
+        "COUCHDB_URL": {
+          "defaultValue": "http://${{COUCHDB_USER}}:${{COUCHDB_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:5984",
+          "description": "Admin URL over the private network for other services (PouchDB, nano, replication).",
+          "required": false
+        },
+        "COUCHDB_PUBLIC_URL": {
+          "defaultValue": "https://${{RAILWAY_PUBLIC_DOMAIN}}",
+          "description": "Public HTTPS URL (LiveSync URI, Fauxton at /_utils, replication from devices).",
+          "required": false
+        },
+        "RAILWAY_DEPLOYMENT_DRAINING_SECONDS": {
+          "defaultValue": "30",
+          "description": "Time CouchDB gets to finish writes and shut down on redeploy.",
+          "required": false
+        }
+      }
+    },
+    "CouchDB Backup": {
+      "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/rclone.svg",
+      "source": {
+        "repo": "baranberkay96/couchdb-railway",
+        "rootDirectory": "/services/backup"
+      },
+      "startCommand": null,
+      "preDeployCommand": null,
+      "healthcheckPath": null,
+      "healthcheckTimeout": null,
+      "restartPolicyType": "NEVER",
+      "numReplicas": 1,
+      "cronSchedule": "15 4 * * *",
+      "publicDomain": false,
+      "targetPort": null,
+      "tcpProxy": null,
+      "volume": null,
+      "variables": {
+        "COUCHDB_HOST": {
+          "defaultValue": "${{CouchDB.RAILWAY_PRIVATE_DOMAIN}}",
+          "description": "CouchDB private hostname.",
+          "required": true
+        },
+        "COUCHDB_PORT": {
+          "defaultValue": "${{CouchDB.PORT}}",
+          "description": "CouchDB port.",
+          "required": true
+        },
+        "COUCHDB_USER": {
+          "defaultValue": "${{CouchDB.COUCHDB_USER}}",
+          "description": "Admin account used for backups (kept in sync by reference).",
+          "required": true
+        },
+        "COUCHDB_PASSWORD": {
+          "defaultValue": "${{CouchDB.COUCHDB_PASSWORD}}",
+          "description": "Password of that account.",
+          "required": true
+        },
+        "BACKUP_S3_BUCKET": {
+          "defaultValue": "${{Bucket.BUCKET}}",
+          "description": "Railway Bucket that stores the backups.",
+          "required": true
+        },
+        "BACKUP_S3_ENDPOINT": {
+          "defaultValue": "${{Bucket.ENDPOINT}}",
+          "description": "Bucket S3 endpoint.",
+          "required": true
+        },
+        "BACKUP_S3_REGION": {
+          "defaultValue": "${{Bucket.REGION}}",
+          "description": "Bucket region.",
+          "required": true
+        },
+        "BACKUP_S3_ACCESS_KEY_ID": {
+          "defaultValue": "${{Bucket.ACCESS_KEY_ID}}",
+          "description": "Bucket access key.",
+          "required": true
+        },
+        "BACKUP_S3_SECRET_ACCESS_KEY": {
+          "defaultValue": "${{Bucket.SECRET_ACCESS_KEY}}",
+          "description": "Bucket secret key.",
+          "required": true
+        },
+        "BACKUP_S3_FORCE_PATH_STYLE": {
+          "defaultValue": "false",
+          "description": "Keep false: Railway Buckets use virtual-hosted-style URLs.",
+          "required": false
+        },
+        "BACKUP_PREFIX": {
+          "defaultValue": "couchdb",
+          "description": "Folder in the bucket; each run writes {prefix}/{UTC timestamp}/.",
+          "required": false
+        },
+        "BACKUP_DATABASES": {
+          "defaultValue": "",
+          "description": "Databases to back up, comma-separated. Empty = every database (plus _users).",
+          "required": false
+        },
+        "BACKUP_INCLUDE_USERS": {
+          "defaultValue": "true",
+          "description": "Also back up the _users database (CouchDB user accounts with password hashes).",
+          "required": false
+        },
+        "BACKUP_ATTACHMENTS": {
+          "defaultValue": "false",
+          "description": "true = include attachments (couchbackup marks this experimental; LiveSync does not use attachments).",
+          "required": false
+        },
+        "BACKUP_RETENTION_DAYS": {
+          "defaultValue": "14",
+          "description": "Delete complete runs older than this many days.",
+          "required": false
+        },
+        "BACKUP_KEEP_MIN": {
+          "defaultValue": "3",
+          "description": "Always keep at least this many complete runs, whatever their age.",
+          "required": false
+        },
+        "BACKUP_ZSTD_LEVEL": {
+          "defaultValue": "6",
+          "description": "zstd level 1 (fast) to 19 (small).",
+          "required": false
+        },
+        "BACKUP_WAIT_SECONDS": {
+          "defaultValue": "300",
+          "description": "How long a run waits for CouchDB before failing.",
+          "required": false
+        },
+        "RESTORE_RUN": {
+          "defaultValue": "latest",
+          "description": "Restore only (start command /usr/local/bin/couchdb-backup restore): run folder, or latest.",
+          "required": false
+        },
+        "RESTORE_DATABASE": {
+          "defaultValue": "",
+          "description": "Restore only: database to restore.",
+          "required": false
+        },
+        "RESTORE_TARGET": {
+          "defaultValue": "",
+          "description": "Restore only: NEW database to restore into. Empty = {database}_restored; existing databases are never touched.",
+          "required": false
+        }
+      }
+    }
+  },
+  "buckets": [
+    "Bucket"
+  ]
+}
